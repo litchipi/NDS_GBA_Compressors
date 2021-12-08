@@ -20,6 +20,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+int strcicmp(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+}
 
 /*----------------------------------------------------------------------------*/
 #define CMD_DECODE    0x00       // decode
@@ -75,11 +85,11 @@ int main(int argc, char **argv) {
   Title();
 
   if (argc < 2) Usage();
-  if      (!strcmpi(argv[1], "-d"))   { cmd = CMD_DECODE; }
-  else if (!strcmpi(argv[1], "-en"))  { cmd = CMD_ENCODE; mode = BLZ_NORMAL; }
-  else if (!strcmpi(argv[1], "-eo"))  { cmd = CMD_ENCODE; mode = BLZ_BEST; }
-  else if (!strcmpi(argv[1], "-en9")) { cmd = CMD_ENCODE; mode = BLZ_NORMAL; }
-  else if (!strcmpi(argv[1], "-eo9")) { cmd = CMD_ENCODE; mode = BLZ_BEST; }
+  if      (!strcicmp(argv[1], "-d"))   { cmd = CMD_DECODE; }
+  else if (!strcicmp(argv[1], "-en"))  { cmd = CMD_ENCODE; mode = BLZ_NORMAL; }
+  else if (!strcicmp(argv[1], "-eo"))  { cmd = CMD_ENCODE; mode = BLZ_BEST; }
+  else if (!strcicmp(argv[1], "-en9")) { cmd = CMD_ENCODE; mode = BLZ_NORMAL; }
+  else if (!strcicmp(argv[1], "-eo9")) { cmd = CMD_ENCODE; mode = BLZ_BEST; }
   else                                 EXIT("Command not supported\n");
   if (argc < 3) EXIT("Filename not specified\n");
 
@@ -134,7 +144,9 @@ char *Load(char *filename, int *length, int min, int max) {
   char *fb;
 
   if ((fp = fopen(filename, "rb")) == NULL) EXIT("\nFile open error\n");
-  fs = filelength(fileno(fp));
+  fseek(fp, 0, SEEK_END); // seek to end of file
+  fs = ftell(fp); // get current file pointer
+  fseek(fp, 0, SEEK_SET); // seek back to beginning of file
   if ((fs < min) || (fs > max)) EXIT("\nFile size error\n");
   fb = Memory(fs + 3, sizeof(char));
   if (fread(fb, 1, fs, fp) != fs) EXIT("\nFile read error\n");

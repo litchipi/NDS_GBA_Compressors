@@ -21,6 +21,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+int strcicmp(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+}
+
 /*----------------------------------------------------------------------------*/
 #define CMD_DECODE    0x00       // decode
 #define CMD_CODE_LE   0x654C     // LZE magic number
@@ -72,8 +81,8 @@ int main(int argc, char **argv) {
   Title();
 
   if (argc < 2) Usage();
-  if      (!strcmpi(argv[1], "-d")) cmd = CMD_DECODE;
-  else if (!strcmpi(argv[1], "-e")) cmd = CMD_CODE_LE;
+  if      (!strcicmp(argv[1], "-d")) cmd = CMD_DECODE;
+  else if (!strcicmp(argv[1], "-e")) cmd = CMD_CODE_LE;
   else                              EXIT("Command not supported\n");
   if (argc < 3) EXIT("Filename not specified\n");
 
@@ -124,7 +133,9 @@ char *Load(char *filename, int *length, int min, int max) {
   char *fb;
 
   if ((fp = fopen(filename, "rb")) == NULL) EXIT("\nFile open error\n");
-  fs = filelength(fileno(fp));
+  fseek(fp, 0, SEEK_END); // seek to end of file
+  fs = ftell(fp); // get current file pointer
+  fseek(fp, 0, SEEK_SET); // seek back to beginning of file
   if ((fs < min) || (fs > max)) EXIT("\nFile size error\n");
   fb = Memory(fs + 3, sizeof(char));
   if (fread(fb, 1, fs, fp) != fs) EXIT("\nFile read error\n");
